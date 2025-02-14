@@ -22,8 +22,11 @@ def extract_content(wayback_url):
             paragraphs = [p.text for p in soup.find_all('p')]
             headings = [h.text for h in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])]
             images = [img['src'] for img in soup.find_all('img') if 'src' in img.attrs]
-            meta_data = {meta.get('name', meta.get('property', meta.get('http-equiv', ''))): meta.get('content', '') for meta in soup.find_all('meta')} 
-
+            meta_data = {
+                            (meta.get('name') or meta.get('property') or meta.get('http-equiv') or '').strip(): meta.get('content', '').strip()
+                            for meta in soup.find_all('meta')
+                            if meta.get('name') or meta.get('property') or meta.get('http-equiv')
+                        }
             content.append({
                 'url': url,
                 'headings': headings,
@@ -63,8 +66,11 @@ def data_to_xml(data, filename):
             img = ET.SubElement(img_element, "image")
             img.text = image
 
-        seo_keywords = ET.SubElement(entry_element, "seo_keywords")
-        seo_keywords.text = entry['meta_data'].get('keywords', '')
+        meta_elem = ET.SubElement(entry_element, "meta_data")
+        for key, value in entry['meta_data'].items():  
+            if key:
+                meta_tag = ET.SubElement(meta_elem, "meta", name=key)
+                meta_tag.text = value
 
       
     tree = ET.ElementTree(root)
@@ -89,6 +95,5 @@ if __name__ == "__main__":
     data_to_xml(scraped_content, 'wayback_scrape.xml')
 
     print("Data scraped is exported to wayback_scrape.xml.")
-
 
 
